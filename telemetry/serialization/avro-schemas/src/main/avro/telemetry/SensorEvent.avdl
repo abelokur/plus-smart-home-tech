@@ -1,44 +1,133 @@
+/**
+ * Протокол событий датчиков для системы телеметрии.
+ * Определяет структуры данных для различных типов сенсорных событий.
+ */
 @namespace("ru.yandex.practicum.kafka.telemetry.event")
 protocol SensorEventProtocol {
-    record ClimateSensorAvro {
-    		int temperature_c;
-    		int humidity;
-    		int co2_level;
-    	}
 
-    	record LightSensorAvro {
-    		int link_quality;
-    		int luminosity;
-    	}
+	/**
+	 * Показатели климатического датчика.
+	 * Содержит данные о температуре, влажности и уровне CO2.
+	 */
+	record ClimateSensorAvro {
+		/**
+		 * Температура в градусах Цельсия.
+		 * Измеряется в диапазоне, характерном для помещений.
+		 */
+		int temperature_c;
+		/**
+		 * Относительная влажность воздуха.
+		 * Измеряется в процентах (%).
+		 */
+		int humidity;
+		/**
+		 * Уровень углекислого газа (CO2) в воздухе.
+		 * Измеряется в ppm (parts per million).
+		 */
+		int co2_level;
+	}
 
-    	record MotionSensorAvro {
-    		int link_quality;
-    		boolean motion;
-    		int voltage;
-    	}
+	/**
+	 * Показатели датчика освещенности.
+	 * Содержит данные о качестве связи и уровне освещенности.
+	 */
+	record LightSensorAvro {
+		/**
+		 * Качество беспроводной связи датчика.
+		 * Чем выше значение, тем лучше качество связи.
+		 */
+		int link_quality;
+		/**
+		 * Уровень освещенности.
+		 * Измеряется в люксах (lx).
+		 */
+		int luminosity;
+	}
 
-    	record SwitchSensorAvro {
-    		boolean state;
-    	}
+	/**
+	 * Показатели датчика движения.
+	 * Содержит данные о движении, качестве связи и напряжении питания.
+	 */
+	record MotionSensorAvro {
+		/**
+		 * Качество беспроводной связи датчика.
+		 * Чем выше значение, тем лучше качество связи.
+		 */
+		int link_quality;
+		/**
+		 * Флаг обнаружения движения.
+		 * true - движение обнаружено, false - движение не обнаружено.
+		 */
+		boolean motion;
+		/**
+		 * Напряжение питания датчика.
+		 * Измеряется в вольтах (V).
+		 */
+		int voltage;
+	}
 
-    	record TemperatureSensorAvro {
-    		// string id;
-    		// string hubId;
-    		timestamp_ms timestamp;
-    		int temperature_c;
-    		int temperature_f;
-    	}
+	/**
+	 * Показатели выключателя/переключателя.
+	 * Содержит состояние устройства.
+	 */
+	record SwitchSensorAvro {
+		/**
+		 * Текущее состояние переключателя.
+		 * true - включено, false - выключено.
+		 */
+		boolean state;
+	}
 
-    	record SensorEventAvro {
-    		string id;
-    		string hubId;
-    		timestamp_ms timestamp;
-    		union{
-    			ClimateSensorAvro,
-    			LightSensorAvro,
-    			MotionSensorAvro,
-    			SwitchSensorAvro,
-    			TemperatureSensorAvro
-    		} payload;
-    	}
+	/**
+	 * Показатели температурного датчика.
+	 * Содержит данные о температуре в разных единицах измерения.
+	 */
+	record TemperatureSensorAvro {
+		/**
+		 * Временная метка измерения.
+		 * Время в миллисекундах с эпохи Unix.
+		 */
+		timestamp_ms timestamp;
+		/**
+		 * Температура в градусах Цельсия.
+		 */
+		int temperature_c;
+		/**
+		 * Температура в градусах Фаренгейта.
+		 */
+		int temperature_f;
+	}
+
+	/**
+	 * Основное событие датчика.
+	 * Содержит общую информацию о событии и полезную нагрузку конкретного типа датчика.
+	 */
+	record SensorEventAvro {
+		/**
+		 * Уникальный идентификатор датчика.
+		 */
+		string id;
+		/**
+		 * Идентификатор концентратора (хаба), к которому подключен датчик.
+		 */
+		string hubId;
+		/**
+		 * Временная метка события.
+		 * Время в миллисекундах с эпохи Unix.
+		 */
+		timestamp_ms timestamp;
+		/**
+		 * Полезная нагрузка события.
+		 * Содержит специфические данные в зависимости от типа датчика.
+		 * Может быть одного из типов: ClimateSensorAvro, LightSensorAvro,
+		 * MotionSensorAvro, SwitchSensorAvro или TemperatureSensorAvro.
+		 */
+		union{
+			ClimateSensorAvro,
+			LightSensorAvro,
+			MotionSensorAvro,
+			SwitchSensorAvro,
+			TemperatureSensorAvro
+		} payload;
+	}
 }

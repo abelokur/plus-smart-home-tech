@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import jakarta.annotation.PreDestroy;
 import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.stereotype.Component;
 import ru.practicum.config.KafkaConfig;
@@ -13,7 +12,6 @@ import ru.practicum.config.TopicType;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
-import java.util.Properties;
 
 @Slf4j
 @Component
@@ -28,16 +26,8 @@ public class KafkaEventProducer implements AutoCloseable {
      * @param kafkaConfig базовая конфигурация Kafka
      */
     public KafkaEventProducer(KafkaConfig kafkaConfig) {
-        topics = kafkaConfig.kafkaTopics();
-
-        Properties properties = kafkaConfig.kafkaProducerProperties();
-        properties.put(ProducerConfig.LINGER_MS_CONFIG, 20); // Задержка для батчинга
-        properties.put(ProducerConfig.ACKS_CONFIG, "all"); // Гарантия доставки
-        properties.put(ProducerConfig.RETRIES_CONFIG, 3); // Количество повторов
-        properties.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 30000); // таймаут одного запроса к брокеру
-        properties.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 60000); // общий таймаут со всеми ретраями
-
-        producer = new KafkaProducer<>(kafkaConfig.kafkaProducerProperties());
+        topics = kafkaConfig.getTopics();
+        producer = new KafkaProducer<>(kafkaConfig.getProducerProperties());
     }
 
     /**

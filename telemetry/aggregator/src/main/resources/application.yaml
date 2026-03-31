@@ -1,14 +1,9 @@
 server:
-  port: 8080
-grpc:
-  server:
-    port: 59091
+  port: 8081
 
 spring:
-  kafka:
-    bootstrap-servers: localhost:9092
   application:
-    name: collectorApp
+    name: aggregatorApp
 
 kafka:
   producer-properties:
@@ -22,6 +17,17 @@ kafka:
     max.request.size: 1048576            # Максимальный размер запроса в байтах (1MB)
     compression.type: none               # Тип сжатия (none, gzip, snappy, lz4, zstd)
 
+  consumer-properties:
+    bootstrap.servers: localhost:9092
+    group.id: snapshot-aggregator-group
+    key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    value.deserializer: ru.practicum.SensorEventDeserializer
+    auto.offset.reset: earliest
+    enable.auto.commit: false
+    # Настройки батчинга
+    fetch.min.bytes: 100
+    fetch.max.wait.ms: 500
+
   topics:
     TELEMETRY_SENSORS: telemetry.sensors.v1
     TELEMETRY_SNAPSHOTS: telemetry.snapshots.v1
@@ -29,11 +35,7 @@ kafka:
 
 logging:
   level:
-    # Для контроллера
-    ru.practicum.controller: DEBUG
     # Для обработчика
-    ru.practicum.service.handler: DEBUG
-    # Для gRPC
-    net.devh.boot.grpc: INFO
+    ru.practicum.service: DEBUG
     # Для Spring
     org.springframework: INFO
