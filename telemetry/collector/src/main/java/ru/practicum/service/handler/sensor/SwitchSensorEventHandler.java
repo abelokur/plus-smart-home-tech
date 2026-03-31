@@ -1,12 +1,12 @@
 package ru.practicum.service.handler.sensor;
 
 import org.springframework.stereotype.Component;
-import ru.practicum.model.sensor.SensorEvent;
-import ru.practicum.model.sensor.SensorEventType;
-import ru.practicum.model.sensor.SwitchSensorEvent;
 import ru.practicum.service.KafkaEventProducer;
+import ru.yandex.practicum.grpc.telemetry.event.SensorEventProto;
+import ru.yandex.practicum.grpc.telemetry.event.SwitchSensorProto;
 import ru.yandex.practicum.kafka.telemetry.event.SwitchSensorAvro;
 
+import static ru.yandex.practicum.grpc.telemetry.event.SensorEventProto.PayloadCase.SWITCH_SENSOR;
 @Component
 public class SwitchSensorEventHandler extends BaseSensorEventHandler<SwitchSensorAvro> {
     /**
@@ -19,29 +19,32 @@ public class SwitchSensorEventHandler extends BaseSensorEventHandler<SwitchSenso
     }
 
     /**
-     * Преобразует SensorEvent в SwitchSensorAvro.
+     * Преобразует SensorEventProto в SwitchSensorAvro.
      * Выполняет маппинг данных переключателя: текущего состояния (включен/выключен).
      *
-     * @param event событие переключателя, должно быть типа SwitchSensorEvent
+     * @param event событие переключателя, должно быть типа SwitchSensorProto
      * @return Avro-представление данных переключателя
-     * @throws ClassCastException       если event не является SwitchSensorEvent
      * @throws IllegalArgumentException если данные переключателя некорректны
      */
     @Override
-    protected SwitchSensorAvro mapToAvro(SensorEvent event) {
-        SwitchSensorEvent _event = (SwitchSensorEvent) event;
-        return SwitchSensorAvro.newBuilder()
-                .setState(_event.isState())
-                .build();
+    protected SwitchSensorAvro mapToAvro(SensorEventProto event) {
+        if (event.getPayloadCase() == SWITCH_SENSOR) {
+            SwitchSensorProto switchSensor = event.getSwitchSensor();
+            return SwitchSensorAvro.newBuilder()
+                    .setState(switchSensor.getState())
+                    .build();
+        } else {
+            throw new IllegalArgumentException("Expected SWITCH_SENSOR event type");
+        }
     }
 
     /**
      * Возвращает тип обрабатываемого события переключателя.
      *
-     * @return тип события SWITCH_SENSOR_EVENT
+     * @return тип события SWITCH_SENSOR
      */
     @Override
-    public SensorEventType getMessageType() {
-        return SensorEventType.SWITCH_SENSOR_EVENT;
+    public SensorEventProto.PayloadCase getMessageType() {
+        return SWITCH_SENSOR;
     }
 }
