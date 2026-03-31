@@ -1,6 +1,20 @@
 server:
   port: 8080
+grpc:
+  server:
+    port: 59091
 
 spring:
   kafka:
     bootstrap-servers: localhost:9092
+
+logging:
+  level:
+    # Для контроллера
+    ru.practicum.controller: DEBUG
+    # Для обработчика
+    ru.practicum.service.handler: DEBUG
+    # Для gRPC
+    net.devh.boot.grpc: INFO
+    # Для Spring
+    org.springframework: INFO

@@ -4,9 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.specific.SpecificRecord;
 import ru.practicum.config.TopicType;
-import ru.practicum.model.sensor.SensorEvent;
 import ru.practicum.service.KafkaEventProducer;
+import ru.yandex.practicum.grpc.telemetry.event.SensorEventProto;
 import ru.yandex.practicum.kafka.telemetry.event.SensorEventAvro;
+
+import static ru.practicum.util.Converter.timestampToInstant;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -15,7 +17,7 @@ public abstract class BaseSensorEventHandler<T extends SpecificRecord> implement
     private static final TopicType TOPIC_TYPE = TopicType.TELEMETRY_SENSORS;
 
     /**
-     * Преобразует SensorEvent в соответствующий Avro-объект.
+     * Преобразует SensorEventProto в соответствующий Avro-объект.
      * Реализация должна быть предоставлена конкретными классами-наследниками.
      *
      * @param event исходное событие сенсора для преобразования
@@ -23,23 +25,23 @@ public abstract class BaseSensorEventHandler<T extends SpecificRecord> implement
      * @throws IllegalArgumentException если event содержит некорректные данные
      *                                  для преобразования в целевой Avro-тип
      */
-    protected abstract T mapToAvro(SensorEvent event);
+    protected abstract T mapToAvro(SensorEventProto event);
 
     /**
      * Обрабатывает событие сенсора: преобразует в Avro-формат и отправляет в Kafka.
      * <p>
      * Создает обертку {@link SensorEventAvro} с основными метаданными события и payload,
-     * полученным из {@link #mapToAvro(SensorEvent)}.
+     * полученным из {@link #mapToAvro(SensorEventProto)}.
      * Отправляет событие в топик {@link TopicType#TELEMETRY_SENSORS}.
      * </p>
      *
      * @param event событие сенсора для обработки
      * @throws RuntimeException         если произошла ошибка при отправке события в Kafka
      * @throws IllegalArgumentException если event равен null
-     * @see #mapToAvro(SensorEvent)
+     * @see #mapToAvro(SensorEventProto)
      */
     @Override
-    public void handle(SensorEvent event) {
+    public void handle(SensorEventProto event) {
         if (event == null) {
             throw new IllegalArgumentException("SensorEvent cannot be null");
         }
@@ -49,7 +51,7 @@ public abstract class BaseSensorEventHandler<T extends SpecificRecord> implement
         SensorEventAvro sensorEventAvro = SensorEventAvro.newBuilder()
                 .setId(event.getId())
                 .setHubId(event.getHubId())
-                .setTimestamp(event.getTimestamp())
+                .setTimestamp(timestampToInstant(event.getTimestamp()))
                 .setPayload(avroEvent)
                 .build();
 

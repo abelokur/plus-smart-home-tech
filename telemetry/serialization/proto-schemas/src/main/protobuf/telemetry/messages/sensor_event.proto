@@ -4,3 +4,47 @@ package telemetry.message.event;
 
 option java_multiple_files = true;
 option java_package = "ru.yandex.practicum.grpc.telemetry.event";
+
+import "google/protobuf/timestamp.proto";
+
+message SensorEventProto{
+  string id = 1; // Идентификатор датчика.
+  google.protobuf.Timestamp timestamp = 2; // Таймстемп события.
+  string hubId = 3; // Идентификатор связанного хаба.
+  /*
+  Данные события от конкретного устройства.
+   */
+  oneof payload{
+    MotionSensorProto motion_sensor = 4;            // Данные события датчика движения.
+    TemperatureSensorProto temperature_sensor = 5;  // Данные события температурного датчика.
+    LightSensorProto light_sensor = 6;              // Данные события датчика освещения.
+    ClimateSensorProto climate_sensor = 7;          // Данные события климатического датчика.
+    SwitchSensorProto switch_sensor = 8;            // Данные события датчика-переключателя.
+  }
+}
+
+message MotionSensorProto {
+  int32 link_quality = 1; // Показатель качества связи. Чем выше значение, тем лучше качество связи.
+  bool motion = 2;     // Указание на наличие движения или чьего-то присутствия.
+  int32 voltage = 3;      // Значение напряжения, которое может использоваться для оценки текущего напряжения в сенсоре или связанном устройстве.
+}
+
+message TemperatureSensorProto {
+  int32 temperature_c = 1; // Уровень температуры по шкале Цельсия.
+  int32 temperature_f = 2; // Уровень температуры по Фаренгейту.
+}
+
+message LightSensorProto {
+  int32 link_quality = 1; // Уровень сигнала.
+  int32 luminosity = 2;   // Уровень освещенности.
+}
+
+message ClimateSensorProto {
+  int32 temperature_c = 1;  // Уровень температуры по шкале Цельсия.
+  int32 humidity = 2;       // Влажность.
+  int32 co2_level = 3;      // Уровень CO2.
+}
+
+message SwitchSensorProto {
+  bool state = 1; // Состояние переключателя: включен/выключен.
+}

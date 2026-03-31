@@ -1,12 +1,12 @@
 package ru.practicum.service.handler.sensor;
 
 import org.springframework.stereotype.Component;
-import ru.practicum.model.sensor.MotionSensorEvent;
-import ru.practicum.model.sensor.SensorEvent;
-import ru.practicum.model.sensor.SensorEventType;
 import ru.practicum.service.KafkaEventProducer;
+import ru.yandex.practicum.grpc.telemetry.event.MotionSensorProto;
+import ru.yandex.practicum.grpc.telemetry.event.SensorEventProto;
 import ru.yandex.practicum.kafka.telemetry.event.MotionSensorAvro;
 
+import static ru.yandex.practicum.grpc.telemetry.event.SensorEventProto.PayloadCase.MOTION_SENSOR;
 @Component
 public class MotionSensorEventHandler extends BaseSensorEventHandler<MotionSensorAvro> {
     /**
@@ -19,31 +19,34 @@ public class MotionSensorEventHandler extends BaseSensorEventHandler<MotionSenso
     }
 
     /**
-     * Преобразует SensorEvent в MotionSensorAvro.
+     * Преобразует SensorEventProto в MotionSensorAvro.
      * Выполняет маппинг данных датчика движения: статуса обнаружения движения, качества связи и напряжения.
      *
-     * @param event событие датчика движения, должно быть типа MotionSensorEvent
+     * @param event событие датчика движения, должно быть типа MotionSensorProto
      * @return Avro-представление данных датчика движения
-     * @throws ClassCastException       если event не является MotionSensorEvent
      * @throws IllegalArgumentException если данные датчика некорректны
      */
     @Override
-    protected MotionSensorAvro mapToAvro(SensorEvent event) {
-        MotionSensorEvent _event = (MotionSensorEvent) event;
-        return MotionSensorAvro.newBuilder()
-                .setMotion(_event.isMotion())
-                .setLinkQuality(_event.getLinkQuality())
-                .setVoltage(_event.getVoltage())
-                .build();
+    protected MotionSensorAvro mapToAvro(SensorEventProto event) {
+        if (event.getPayloadCase() == MOTION_SENSOR) {
+            MotionSensorProto motionSensor = event.getMotionSensor();
+            return MotionSensorAvro.newBuilder()
+                    .setMotion(motionSensor.getMotion())
+                    .setLinkQuality(motionSensor.getLinkQuality())
+                    .setVoltage(motionSensor.getVoltage())
+                    .build();
+        } else {
+            throw new IllegalArgumentException("Expected MOTION_SENSOR event type");
+        }
     }
 
     /**
      * Возвращает тип обрабатываемого события датчика движения.
      *
-     * @return тип события MOTION_SENSOR_EVENT
+     * @return тип события MOTION_SENSOR
      */
     @Override
-    public SensorEventType getMessageType() {
-        return SensorEventType.MOTION_SENSOR_EVENT;
+    public SensorEventProto.PayloadCase getMessageType() {
+        return MOTION_SENSOR;
     }
 }
