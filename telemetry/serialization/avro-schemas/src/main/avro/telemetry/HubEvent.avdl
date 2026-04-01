@@ -1,75 +1,177 @@
+/**
+ * Протокол событий концентратора (хаба) для системы телеметрии.
+ * Определяет структуры данных для управления устройствами и сценариями автоматизации.
+ */
 @namespace("ru.yandex.practicum.kafka.telemetry.event")
 protocol HubEventProtocol {
-    enum DeviceTypeAvro {
-    		MOTION_SENSOR,
-    		TEMPERATURE_SENSOR,
-    		LIGHT_SENSOR,
-    		CLIMATE_SENSOR,
-    		SWITCH_SENSOR
-    	}
 
-    	enum ConditionTypeAvro {
-    		MOTION,
-    		LUMINOSITY,
-    		SWITCH,
-    		TEMPERATURE,
-    		CO2LEVEL,
-    		HUMIDITY
-    	}
+	/**
+	 * Типы устройств, поддерживаемых системой.
+	 */
+	enum DeviceTypeAvro {
+		MOTION_SENSOR, // Датчик движения
+		TEMPERATURE_SENSOR, // Температурный датчик
+		LIGHT_SENSOR, // Датчик освещенности
+		CLIMATE_SENSOR, // Климатический датчик (температура, влажность, CO2)
+		SWITCH_SENSOR// Переключатель/выключатель
+	}
 
-    	enum ConditionOperationAvro {
-    		EQUALS,
-    		GREATER_THAN,
-    		LOWER_THAN
-    	}
+	/**
+	 * Типы условий для триггеров сценариев автоматизации.
+	 */
+	enum ConditionTypeAvro {
+		MOTION, // Обнаружение движения
+		LUMINOSITY, // Уровень освещенности
+		SWITCH, // Состояние переключателя
+		TEMPERATURE, // Температура
+		CO2LEVEL, // Уровень CO2
+		HUMIDITY// Влажность воздуха
+	}
 
-    	enum ActionTypeAvro {
-    		ACTIVATE,
-    		DEACTIVATE,
-    		INVERSE,
-    		SET_VALUE
-    	}
+	/**
+	 * Операции сравнения для условий сценариев.
+	 */
+	enum ConditionOperationAvro {
+		EQUALS, // Равно
+		GREATER_THAN, // Больше чем
+		LOWER_THAN// Меньше чем
+	}
 
-    	record DeviceAddedEventAvro {
-    		string id;
-    		DeviceTypeAvro type;
-    	}
+	/**
+	 * Типы действий для сценариев автоматизации.
+	 */
+	enum ActionTypeAvro {
+		ACTIVATE, // Активировать устройство
+		DEACTIVATE, // Деактивировать устройство
+		INVERSE, // Инвертировать текущее состояние
+		SET_VALUE// Установить конкретное значение
+	}
 
-    	record DeviceRemovedEventAvro {
-    		string id;
-    	}
+	/**
+	 * Событие добавления нового устройства к концентратору.
+	 */
+	record DeviceAddedEventAvro {
+		/**
+		 * Уникальный идентификатор устройства.
+		 */
+		string id;
+		/**
+		 * Тип добавляемого устройства.
+		 */
+		DeviceTypeAvro type;
+	}
 
-    	record ScenarioConditionAvro {
-    		string sensor_id;
-    		ConditionTypeAvro type;
-    		ConditionOperationAvro operation;
-    		union{null, int, boolean} value = null;
-    	}
+	/**
+	 * Событие удаления устройства из концентратора.
+	 */
+	record DeviceRemovedEventAvro {
+		/**
+		 * Уникальный идентификатор удаляемого устройства.
+		 */
+		string id;
+	}
 
-    	record DeviceActionAvro {
-    		string sensor_id;
-    		ActionTypeAvro type;
-    		int? value = null;
-    	}
+	/**
+	 * Условие для сценария автоматизации.
+	 * Определяет триггер, который должен выполниться для активации сценария.
+	 */
+	record ScenarioConditionAvro {
+		/**
+		 * Идентификатор датчика, от которого ожидается условие.
+		 */
+		string sensor_id;
+		/**
+		 * Тип условия (какой параметр проверяется).
+		 */
+		ConditionTypeAvro type;
+		/**
+		 * Операция сравнения для условия.
+		 */
+		ConditionOperationAvro operation;
+		/**
+		 * Значение для сравнения.
+		 * Может быть целым числом, булевым значением или null в зависимости от типа условия.
+		 * Например: для температуры - число, для движения - boolean.
+		 */
+		union{null, int, boolean} value = null;
+	}
 
-    	record ScenarioAddedEventAvro {
-    		string name;
-    		array<ScenarioConditionAvro> conditions;
-    		array<DeviceActionAvro> actions;
-    	}
+	/**
+	 * Действие, выполняемое сценарием автоматизации.
+	 * Определяет какое действие должно быть выполнено при активации сценария.
+	 */
+	record DeviceActionAvro {
+		/**
+		 * Идентификатор устройства, над которым выполняется действие.
+		 */
+		string sensor_id;
+		/**
+		 * Тип выполняемого действия.
+		 */
+		ActionTypeAvro type;
+		/**
+		 * Значение для действия (опционально).
+		 * Используется только для действия SET_VALUE.
+		 * Например: установить уровень освещенности на конкретное значение.
+		 */
+		int? value = null;
+	}
 
-    	record ScenarioRemovedEventAvro {
-    		string name;
-    	}
+	/**
+	 * Событие добавления нового сценария автоматизации.
+	 */
+	record ScenarioAddedEventAvro {
+		/**
+		 * Уникальное имя сценария.
+		 */
+		string name;
+		/**
+		 * Массив условий, которые должны выполниться для активации сценария.
+		 * Все условия должны выполниться одновременно (логическое И).
+		 */
+		array<ScenarioConditionAvro> conditions;
+		/**
+		 * Массив действий, которые выполняются при активации сценария.
+		 * Действия выполняются в порядке их следования в массиве.
+		 */
+		array<DeviceActionAvro> actions;
+	}
 
-    	record HubEventAvro {
-    		string hub_id;
-    		timestamp_ms timestamp;
-    		union{
-    			DeviceAddedEventAvro,
-    			DeviceRemovedEventAvro,
-    			ScenarioAddedEventAvro,
-    			ScenarioRemovedEventAvro
-    		} payload;
-    	}
+	/**
+	 * Событие удаления сценария автоматизации.
+	 */
+	record ScenarioRemovedEventAvro {
+		/**
+		 * Имя удаляемого сценария.
+		 */
+		string name;
+	}
+
+	/**
+	 * Основное событие концентратора.
+	 * Содержит общую информацию о событии и полезную нагрузку конкретного типа.
+	 */
+	record HubEventAvro {
+		/**
+		 * Идентификатор концентратора, от которого поступило событие.
+		 */
+		string hub_id;
+		/**
+		 * Временная метка события.
+		 * Время в миллисекундах с эпохи Unix.
+		 */
+		timestamp_ms timestamp;
+		/**
+		 * Полезная нагрузка события.
+		 * Содержит специфические данные в зависимости от типа события.
+		 * Может быть одного из типов: DeviceAddedEventAvro, DeviceRemovedEventAvro,
+		 * ScenarioAddedEventAvro или ScenarioRemovedEventAvro.
+		 */
+		union{
+			DeviceAddedEventAvro,
+			DeviceRemovedEventAvro,
+			ScenarioAddedEventAvro,
+			ScenarioRemovedEventAvro
+		} payload;
+	}
 }
