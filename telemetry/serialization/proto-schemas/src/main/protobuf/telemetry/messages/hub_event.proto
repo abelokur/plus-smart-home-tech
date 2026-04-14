@@ -92,3 +92,10 @@ message ScenarioAddedEventProto {
 message ScenarioRemovedEventProto {
   string name = 1; // Название сценария уникальное в рамках хаба.
 }
+
+message DeviceActionRequest {
+  string hub_id = 1; // Идентификатор хаба.
+  string scenario_name = 2; // Название сценария уникальное в рамках хаба.
+  DeviceActionProto action = 3;
+  google.protobuf.Timestamp timestamp = 4;
+}
