@@ -1,0 +1,45 @@
+spring:
+  jpa:
+    hibernate.ddl-auto: none                     # Отключить автоматическое создание и обновление таблиц Hibernate
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC                      # Установить временную зону БД в UTC для хранения дат
+        format_sql: true                         # Включить форматирование SQL запросов в логах для лучшей читаемости
+    show-sql: true                               # Выводить SQL запросы в консоль (только для разработки)
+  sql.init.mode: always                          # Всегда выполнять SQL скрипты инициализации при запуске
+  datasource:
+    url: jdbc:postgresql://localhost:5432/smarthomedb?currentSchema=commerce_cart  # URL для подключения к PostgreSQL с указанием схемы
+    username: postgres                           # Имя пользователя для аутентификации в БД
+    password: 12345                              # Пароль для аутентификации в БД
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true                            # Включить интеграцию Circuit Breaker с Feign клиентами
+        group:
+          enabled: true                          # Включить группировку Circuit Breaker по имени Feign клиента
+        alphanumeric-ids:
+          enabled: true                          # Генерировать имена Circuit Breaker без специальных символов
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,circuitbreakers,configprops,loggers,retries  # Список эндпоинтов Actuator для экспозиции через веб
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10                     # Количество вызовов в скользящем окне для расчета статистики
+        minimumNumberOfCalls: 5                   # Минимальное количество вызовов перед оценкой состояния Circuit Breaker
+        failureRateThreshold: 50                  # Пороговое значение процента ошибок для перехода в состояние OPEN
+        waitDurationInOpenState: 5s               # Время ожидания в состоянии OPEN перед переходом в HALF_OPEN
+        permittedNumberOfCallsInHalfOpenState: 3  # Количество разрешенных тестовых вызовов в состоянии HALF_OPEN
+        ignoreExceptions:
+          - "ru.practicum.exception.ResourceNotFoundException"      # Игнорировать исключения 404 Not Found в статистике Circuit Breaker
+          - "ru.practicum.exception.BadRequestException"           # Игнорировать исключения 4xx Client Error в статистике Circuit Breaker
+    instances:
+      warehouse:
+        baseConfig: default                       # Использовать базовую конфигурацию из секции configs.default
+        slidingWindowSize: 20                     # Количество вызовов в скользящем окне для расчета статистики
+        minimumNumberOfCalls: 10                   # Минимальное количество вызовов перед оценкой состояния Circuit Breaker

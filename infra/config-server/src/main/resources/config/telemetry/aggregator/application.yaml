@@ -1,0 +1,34 @@
+kafka:
+  producer-properties:
+    bootstrap.servers: localhost:9092
+    key.serializer: org.apache.kafka.common.serialization.StringSerializer
+    value.serializer: ru.practicum.GeneralAvroSerializer
+    # Настройки батчинга
+    batch.size: 16384                    # Максимальный объем батча в байтах (16KB)
+    linger.ms: 100                       # Максимальное время ожидания в ms
+    buffer.memory: 33554432              # Общий объем буфера в байтах (32MB)
+    max.request.size: 1048576            # Максимальный размер запроса в байтах (1MB)
+    compression.type: none               # Тип сжатия (none, gzip, snappy, lz4, zstd)
+
+  consumer-properties:
+    bootstrap.servers: localhost:9092
+    group.id: snapshot-aggregator-group
+    key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    value.deserializer: ru.practicum.SensorEventDeserializer
+    auto.offset.reset: earliest
+    enable.auto.commit: false
+    # Настройки батчинга
+    fetch.min.bytes: 100
+    fetch.max.wait.ms: 500
+
+  topics:
+    TELEMETRY_SENSORS: telemetry.sensors.v1
+    TELEMETRY_SNAPSHOTS: telemetry.snapshots.v1
+    TELEMETRY_HUBS: telemetry.hubs.v1
+
+logging:
+  level:
+    # Для обработчика
+    ru.practicum.service: DEBUG
+    # Для Spring
+    org.springframework: INFO
