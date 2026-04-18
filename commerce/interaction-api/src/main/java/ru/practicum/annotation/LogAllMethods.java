@@ -22,7 +22,6 @@ import java.lang.annotation.Target;
  * <p>
  * <b>Пример использования:</b>
  * <pre>{@code
- * @Service
  * @LogAllMethods
  * public class UserService {
  *     public User createUser(UserDto userDto) {
@@ -48,5 +47,4 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface LogAllMethods {
-    // Аннотация-маркер, не содержит дополнительных параметров
 }

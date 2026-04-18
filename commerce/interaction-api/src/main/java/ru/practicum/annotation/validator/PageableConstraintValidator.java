@@ -30,6 +30,11 @@ import org.springframework.data.domain.Pageable;
  */
 public class PageableConstraintValidator implements ConstraintValidator<ValidPageable, Pageable> {
 
+    private static final int DEFAULT_MIN_PAGE = 0;
+    private static final int DEFAULT_MIN_SIZE = 1;
+    private static final int DEFAULT_MAX_SIZE = 1000;
+    private static final int DEFAULT_MAX_PAGE = Integer.MAX_VALUE;
+
     private int minPage;
     private int maxPage;
     private int minSize;
@@ -51,14 +56,14 @@ public class PageableConstraintValidator implements ConstraintValidator<ValidPag
      */
     @Override
     public void initialize(ValidPageable constraintAnnotation) {
-        this.minPage = constraintAnnotation.minPage() >= 0 ?
-                constraintAnnotation.minPage() : 0;
+        this.minPage = constraintAnnotation.minPage() >= DEFAULT_MIN_PAGE ?
+                constraintAnnotation.minPage() : DEFAULT_MIN_PAGE;
         this.maxPage = constraintAnnotation.maxPage() > minPage ?
-                constraintAnnotation.maxPage() : Integer.MAX_VALUE;
-        this.minSize = constraintAnnotation.minSize() > 0 ?
-                constraintAnnotation.minSize() : 1;
+                constraintAnnotation.maxPage() : DEFAULT_MAX_PAGE;
+        this.minSize = constraintAnnotation.minSize() > DEFAULT_MIN_SIZE ?
+                constraintAnnotation.minSize() : DEFAULT_MIN_SIZE;
         this.maxSize = constraintAnnotation.maxSize() > minSize ?
-                constraintAnnotation.maxSize() : 1000;
+                constraintAnnotation.maxSize() : DEFAULT_MAX_SIZE;
     }
 
     /**
