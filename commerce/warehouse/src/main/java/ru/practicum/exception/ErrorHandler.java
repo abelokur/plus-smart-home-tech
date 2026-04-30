@@ -7,8 +7,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.practicum.dto.exception.ErrorResponse;
 
-import java.util.List;
-
 /**
  * Обработчик исключений для контроллера склада.
  */
@@ -19,35 +17,24 @@ public class ErrorHandler extends BaseExceptionHandler {
     @ExceptionHandler(NoSpecifiedProductInWarehouseException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleNoSpecifiedProductInWarehouseException(NoSpecifiedProductInWarehouseException e) {
-        return createWarehouseErrorResponse("Product not found in warehouse", e);
+        return handleGenericException(e, "Product not found in warehouse");
     }
 
     @ExceptionHandler(SpecifiedProductAlreadyInWarehouseException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleSpecifiedProductAlreadyInWarehouseException(SpecifiedProductAlreadyInWarehouseException e) {
-        return createWarehouseErrorResponse("Product already exists in warehouse", e);
+        return handleGenericException(e, "Product already exists in warehouse");
     }
 
     @ExceptionHandler(ProductInShoppingCartLowQuantityInWarehouse.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleProductInShoppingCartLowQuantityInWarehouse(ProductInShoppingCartLowQuantityInWarehouse e) {
-        return createWarehouseErrorResponse("Insufficient stock in warehouse", e);
+        return handleGenericException(e, "Insufficient stock in warehouse");
     }
 
-    private ErrorResponse createWarehouseErrorResponse(String message, Exception e) {
-        List<ErrorResponse.Issue> issues = List.of(
-                ErrorResponse.Issue.builder()
-                        .location(e.getClass().getSimpleName())
-                        .description(e.getMessage())
-                        .build()
-        );
-
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message(message)
-                .issues(issues)
-                .build();
-
-        log.warn("{}: {}", message, e.getMessage(), e);
-        return errorResponse;
+    @ExceptionHandler(ProductInShoppingCartNotInWarehouse.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleProductInShoppingCartNotInWarehouse(ProductInShoppingCartNotInWarehouse e) {
+        return handleGenericException(e, "Out of stock in warehouse");
     }
 }

@@ -1,3 +1,13 @@
+app:
+  security:
+    users:
+      shopping-store:
+        password: shopping-store
+        roles: SERVICE
+      gateway:
+        password: gateway
+        roles: GATEWAY
+
 spring:
   jpa:
     hibernate.ddl-auto: none                     # Отключить автоматическое создание и обновление таблиц Hibernate
@@ -38,3 +48,7 @@ resilience4j:
         ignoreExceptions:
           - "ru.practicum.exception.ResourceNotFoundException"      # Игнорировать исключения 404 Not Found в статистике Circuit Breaker
           - "ru.practicum.exception.BadRequestException"           # Игнорировать исключения 4xx Client Error в статистике Circuit Breaker
+
+logging:
+  level:
+    org.springframework.security: DEBUG # Уровень логирования для пакета security

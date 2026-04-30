@@ -7,8 +7,20 @@ import ru.yandex.practicum.grpc.telemetry.event.TemperatureSensorProto;
 import ru.yandex.practicum.kafka.telemetry.event.TemperatureSensorAvro;
 
 import static ru.yandex.practicum.grpc.telemetry.event.SensorEventProto.PayloadCase.TEMPERATURE_SENSOR;
+
+/**
+ * Обработчик событий датчиков температуры.
+ * Преобразует TemperatureSensorProto в TemperatureSensorAvro и отправляет в Kafka топик TELEMETRY_SENSORS.
+ * Обрабатывает данные о температуре в градусах Цельсия и Фаренгейта с временной меткой.
+ *
+ * @see BaseSensorEventHandler
+ * @see TemperatureSensorProto
+ * @see TemperatureSensorAvro
+ * @see SensorEventProto.PayloadCase#TEMPERATURE_SENSOR
+ */
 @Component
 public class TemperatureSensorEventHandler extends BaseSensorEventHandler<TemperatureSensorAvro> {
+
     /**
      * Конструктор обработчика событий датчиков температуры.
      *

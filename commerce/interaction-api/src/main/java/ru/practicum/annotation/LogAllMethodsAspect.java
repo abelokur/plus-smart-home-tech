@@ -27,6 +27,18 @@ import org.aspectj.lang.annotation.Aspect;
  * <p>
  * <b>Пример использования:</b>
  * <pre>{@code
+ * // Конфигурация Spring
+ * @Configuration
+ * @EnableAspectJAutoProxy
+ * public class AopConfig {
+ *     @Bean
+ *     public LogAllMethodsAspect logAllMethodsAspect() {
+ *         return new LogAllMethodsAspect();
+ *     }
+ * }
+ *
+ * // Помеченный класс будет логироваться
+ * @Service
  * @LogAllMethods
  * public class UserService {
  *     public User getUser(Long id) { ... }

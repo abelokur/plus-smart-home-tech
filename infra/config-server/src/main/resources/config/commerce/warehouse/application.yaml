@@ -1,3 +1,19 @@
+feign:
+  clients:
+    shopping-store:
+      username: shopping-store
+      password: shopping-store
+
+app:
+  security:
+    users:
+      warehouse:
+        password: warehouse
+        roles: SERVICE
+      gateway:
+        password: gateway
+        roles: GATEWAY
+
 spring:
   jpa:
     hibernate.ddl-auto: none                     # Отключить автоматическое создание и обновление таблиц Hibernate
@@ -44,3 +60,7 @@ resilience4j:
         slidingWindowSize: 20                     # Количество вызовов в скользящем окне для расчета статистики
         minimumNumberOfCalls: 10                  # Минимальное количество вызовов перед оценкой состояния Circuit Breaker
         failureRateThreshold: 60                  # Пороговое значение процента ошибок для перехода в состояние OPEN
+
+logging:
+  level:
+    org.springframework.security: DEBUG # Уровень логирования для пакета security

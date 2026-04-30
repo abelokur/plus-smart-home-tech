@@ -20,6 +20,8 @@ import java.util.UUID;
 
 /**
  * Реализация сервиса управления корзиной покупок.
+ * Обрабатывает операции с корзиной: получение, добавление/удаление товаров,
+ * изменение количества и деактивацию корзины.
  */
 @Service
 @RequiredArgsConstructor
@@ -29,19 +31,37 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
     private final ShoppingCartMapper shoppingCartMapper;
     private final WarehouseFeignClient warehouseClient;
 
+    /**
+     * Получает корзину покупок пользователя.
+     * Если активной корзины нет - создает новую.
+     *
+     * @param username имя пользователя
+     * @return DTO корзины покупок
+     * @throws NotAuthorizedUserException если username равен null или пустой
+     */
     @Override
     public ShoppingCartDto getShoppingCartByUsername(String username) {
         validateUsername(username);
-        ShoppingCart shoppingCart = getOrCreateShoppingCart(username); // получаем имеющуюся или создаем новую корзину для пользователя
+        ShoppingCart shoppingCart = getOrCreateShoppingCart(username);
         return shoppingCartMapper.toDto(shoppingCart);
     }
 
+    /**
+     * Добавляет товары в корзину пользователя.
+     * Суммирует количество, если товар уже есть в корзине.
+     * Проверяет доступность товаров на складе.
+     *
+     * @param username имя пользователя
+     * @param products товары для добавления (ID товара → количество)
+     * @return обновленная корзина покупок
+     * @throws NotAuthorizedUserException если username равен null или пустой
+     */
     @Transactional
     @Override
     public ShoppingCartDto addItemToShoppingCart(String username, Map<UUID, Long> products) {
         validateUsername(username);
 
-        ShoppingCart shoppingCart = getOrCreateShoppingCart(username); // получаем имеющуюся или создаем новую корзину для пользователя
+        ShoppingCart shoppingCart = getOrCreateShoppingCart(username);
 
         // Суммирование количества
         products.forEach((productId, quantity) ->
@@ -49,13 +69,20 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         );
 
         ShoppingCartDto shoppingCartDto = shoppingCartMapper.toDto(shoppingCart);
-        BookedProductsDto bookedProductsDto = warehouseClient.checkQuantityInWarehouse(shoppingCartDto); // проверяем доступность товара на складе
+        BookedProductsDto bookedProductsDto = warehouseClient.checkQuantityInWarehouse(shoppingCartDto);
 
         log.debug("Booked products: {}", bookedProductsDto);
 
         return shoppingCartMapper.toDto(shoppingCart);
     }
 
+    /**
+     * Деактивирует корзину покупок пользователя.
+     * Устанавливает флаг active = false.
+     *
+     * @param username имя пользователя
+     * @throws NotAuthorizedUserException если username равен null или пустой
+     */
     @Transactional
     @Override
     public void deactivateShoppingCartByUsername(String username) {
@@ -71,6 +98,16 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
                 );
     }
 
+    /**
+     * Удаляет товары из корзины пользователя.
+     *
+     * @param username имя пользователя
+     * @param items    список идентификаторов товаров для удаления
+     * @return обновленная корзина покупок
+     * @throws IllegalArgumentException          если список товаров пустой
+     * @throws NotAuthorizedUserException        если username равен null или пустой
+     * @throws NoProductsInShoppingCartException если корзина не найдена или товаров нет в корзине
+     */
     @Transactional
     @Override
     public ShoppingCartDto removeItemFromShoppingCart(String username, List<UUID> items) {
@@ -97,6 +134,16 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         return shoppingCartMapper.toDto(shoppingCart);
     }
 
+    /**
+     * Изменяет количество конкретного товара в корзине.
+     * Проверяет доступность нового количества на складе.
+     *
+     * @param username имя пользователя
+     * @param request  запрос на изменение количества
+     * @return обновленная корзина покупок
+     * @throws NotAuthorizedUserException        если username равен null или пустой
+     * @throws NoProductsInShoppingCartException если корзина или товар не найдены
+     */
     @Transactional
     @Override
     public ShoppingCartDto changeItemQuantity(String username, ChangeProductQuantityRequest request) {
@@ -116,19 +163,29 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         products.put(request.productId(), request.newQuantity());
 
         ShoppingCartDto shoppingCartDto = shoppingCartMapper.toDto(shoppingCart);
-
-        warehouseClient.checkQuantityInWarehouse(shoppingCartDto); //проверяем доступность товара на складе
+        warehouseClient.checkQuantityInWarehouse(shoppingCartDto);
 
         return shoppingCartDto;
     }
 
-
+    /**
+     * Проверяет валидность имени пользователя.
+     *
+     * @param username имя пользователя
+     * @throws NotAuthorizedUserException если username равен null или пустой
+     */
     private void validateUsername(String username) {
         if (username == null || username.isEmpty()) {
             throw new NotAuthorizedUserException("Username cannot be null or empty");
         }
     }
 
+    /**
+     * Получает существующую активную корзину или создает новую.
+     *
+     * @param username имя пользователя
+     * @return активная корзина покупок
+     */
     private ShoppingCart getOrCreateShoppingCart(String username) {
         return shoppingCartRepository.findByUsernameIgnoreCaseAndActiveTrue(username)
                 .orElseGet(() -> shoppingCartRepository.save(ShoppingCart.builder()

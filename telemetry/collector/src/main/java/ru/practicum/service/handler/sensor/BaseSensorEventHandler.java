@@ -10,9 +10,20 @@ import ru.yandex.practicum.kafka.telemetry.event.SensorEventAvro;
 
 import static ru.practicum.util.Converter.timestampToInstant;
 
+/**
+ * Абстрактный базовый класс для обработчиков событий сенсоров.
+ * Предоставляет общую логику преобразования SensorEvent в Avro-формат и отправки в Kafka.
+ *
+ * @param <T> тип Avro-события, реализующий {@link SpecificRecord}, который будет отправлен как payload
+ * @see SensorEventHandler
+ * @see KafkaEventProducer
+ * @see SensorEventProto
+ * @see SensorEventAvro
+ */
 @Slf4j
 @RequiredArgsConstructor
 public abstract class BaseSensorEventHandler<T extends SpecificRecord> implements SensorEventHandler {
+
     private final KafkaEventProducer producer;
     private static final TopicType TOPIC_TYPE = TopicType.TELEMETRY_SENSORS;
 
@@ -62,4 +73,6 @@ public abstract class BaseSensorEventHandler<T extends SpecificRecord> implement
             throw new RuntimeException("Failed to process SensorEvent", e);
         }
     }
+
+
 }

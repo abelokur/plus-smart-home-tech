@@ -6,13 +6,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import ru.practicum.dto.cart.ShoppingCartDto;
-import ru.practicum.dto.warehouse.AddProductToWarehouseRequest;
-import ru.practicum.dto.warehouse.AddressDto;
-import ru.practicum.dto.warehouse.BookedProductsDto;
-import ru.practicum.dto.warehouse.NewProductInWarehouseRequest;
+import ru.practicum.dto.warehouse.*;
+
+import java.util.Map;
+import java.util.UUID;
 
 /**
- * Клиент для работы со складом.
+ * Контракт для работы со складом.
+ * Используется как для контроллера, так и для Feign-клиента.
  */
 public interface WarehouseClient {
 
@@ -48,4 +49,39 @@ public interface WarehouseClient {
      */
     @GetMapping("/address")
     AddressDto getWarehouseAddress();
+
+    /**
+     * Отмечает товары как отгруженные для доставки.
+     *
+     * @param request данные об отгрузке
+     */
+    @PostMapping("/shipped")
+    void shippedToDelivery(@RequestBody @Valid ShippedToDeliveryRequest request);
+
+    /**
+     * Возвращает товары на склад.
+     *
+     * @param products карта товаров для возврата (ID товара → количество)
+     */
+    @PostMapping("/return")
+    void returnToWarehouse(@RequestBody Map<UUID, Long> products);
+
+    /**
+     * Собирает товары для заказа из корзины.
+     *
+     * @param request запрос на сборку товаров
+     * @return информация о забронированных товарах
+     */
+    @PostMapping("/assembly")
+    BookedProductsDto assemblyProductForOrderFromShoppingCart(
+            @RequestBody @Valid
+            AssemblyProductsForOrderRequest request);
+
+    /**
+     * Отменяет сборку товаров для заказа.
+     *
+     * @param orderId идентификатор заказа
+     */
+    @PostMapping("/assembly/cancel")
+    void cancelAssemblyProductForOrder(@RequestBody UUID orderId);
 }

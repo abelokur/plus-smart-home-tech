@@ -7,8 +7,20 @@ import ru.yandex.practicum.grpc.telemetry.event.SwitchSensorProto;
 import ru.yandex.practicum.kafka.telemetry.event.SwitchSensorAvro;
 
 import static ru.yandex.practicum.grpc.telemetry.event.SensorEventProto.PayloadCase.SWITCH_SENSOR;
+
+/**
+ * Обработчик событий переключателей (Switch сенсоров).
+ * Преобразует SwitchSensorProto в SwitchSensorAvro и отправляет в Kafka топик TELEMETRY_SENSORS.
+ * Обрабатывает данные о состоянии переключателя (включен/выключен).
+ *
+ * @see BaseSensorEventHandler
+ * @see SwitchSensorProto
+ * @see SwitchSensorAvro
+ * @see SensorEventProto.PayloadCase#SWITCH_SENSOR
+ */
 @Component
 public class SwitchSensorEventHandler extends BaseSensorEventHandler<SwitchSensorAvro> {
+
     /**
      * Конструктор обработчика событий переключателей.
      *

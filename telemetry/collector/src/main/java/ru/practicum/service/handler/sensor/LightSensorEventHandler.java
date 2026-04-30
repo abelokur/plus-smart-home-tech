@@ -7,8 +7,20 @@ import ru.yandex.practicum.grpc.telemetry.event.SensorEventProto;
 import ru.yandex.practicum.kafka.telemetry.event.LightSensorAvro;
 
 import static ru.yandex.practicum.grpc.telemetry.event.SensorEventProto.PayloadCase.LIGHT_SENSOR;
+
+/**
+ * Обработчик событий датчиков освещенности.
+ * Преобразует LightSensorProto в LightSensorAvro и отправляет в Kafka топик TELEMETRY_SENSORS.
+ * Обрабатывает данные об уровне освещенности и качестве связи датчика.
+ *
+ * @see BaseSensorEventHandler
+ * @see LightSensorProto
+ * @see LightSensorAvro
+ * @see SensorEventProto.PayloadCase#LIGHT_SENSOR
+ */
 @Component
 public class LightSensorEventHandler extends BaseSensorEventHandler<LightSensorAvro> {
+
     /**
      * Конструктор обработчика событий датчиков освещенности.
      *

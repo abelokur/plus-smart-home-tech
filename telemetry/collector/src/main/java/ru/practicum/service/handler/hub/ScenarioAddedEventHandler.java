@@ -10,8 +10,25 @@ import ru.yandex.practicum.kafka.telemetry.event.ScenarioAddedEventAvro;
 
 import static ru.yandex.practicum.grpc.telemetry.event.HubEventProto.PayloadCase.SCENARIO_ADDED;
 
+/**
+ * Обработчик событий добавления новых сценариев в хаб.
+ * Преобразует ScenarioAddedEventProto в Avro-формат и отправляет в Kafka топик TELEMETRY_HUBS.
+ * Сценарий включает в себя набор действий устройств и условий их выполнения.
+ *
+ * @see BaseHubEventHandler
+ * @see ScenarioAddedEventProto
+ * @see ScenarioAddedEventAvro
+ * @see DeviceActionMapper
+ * @see ScenarioConditionMapper
+ */
 @Component
 public class ScenarioAddedEventHandler extends BaseHubEventHandler<ScenarioAddedEventAvro> {
+
+    /**
+     * Конструктор обработчика событий добавления сценариев.
+     *
+     * @param producer Kafka продюсер для отправки событий
+     */
     public ScenarioAddedEventHandler(KafkaEventProducer producer) {
         super(producer);
     }

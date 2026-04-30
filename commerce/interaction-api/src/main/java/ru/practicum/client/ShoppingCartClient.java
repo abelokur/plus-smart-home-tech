@@ -11,7 +11,8 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Клиент для работы с API корзины покупок.
+ * Контракт для работы с корзиной покупок.
+ * Используется как для контроллера, так и для Feign-клиента.
  */
 public interface ShoppingCartClient {
 

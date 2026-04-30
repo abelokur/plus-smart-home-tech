@@ -1,7 +1,7 @@
 package ru.practicum.service;
 
-import lombok.extern.slf4j.Slf4j;
 import jakarta.annotation.PreDestroy;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -13,6 +13,12 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 
+/**
+ * Кастомная реализация KafkaProducer с функцией отправки событий в топики.
+ * Управляет жизненным циклом Kafka producer и автоматически закрывает его при завершении работы приложения.
+ *
+ * @see AutoCloseable
+ */
 @Slf4j
 @Component
 public class KafkaEventProducer implements AutoCloseable {
@@ -102,4 +108,5 @@ public class KafkaEventProducer implements AutoCloseable {
             }
         }
     }
+
 }

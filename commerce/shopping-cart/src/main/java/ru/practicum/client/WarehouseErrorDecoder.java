@@ -1,6 +1,5 @@
 package ru.practicum.client;
 
-import org.springframework.stereotype.Component;
 import ru.practicum.exception.BaseErrorDecoder;
 
 /**
@@ -9,6 +8,8 @@ import ru.practicum.exception.BaseErrorDecoder;
  * Расширяет {@link BaseErrorDecoder} для обработки HTTP ошибок,
  * возникающих при вызове API склада через Feign.
  */
-@Component
 public class WarehouseErrorDecoder extends BaseErrorDecoder {
+    public WarehouseErrorDecoder() {
+        super("warehouse");
+    }
 }

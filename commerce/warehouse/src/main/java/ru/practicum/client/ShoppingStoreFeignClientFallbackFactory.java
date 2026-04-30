@@ -8,11 +8,10 @@ import org.springframework.stereotype.Component;
 import ru.practicum.dto.product.ProductCategory;
 import ru.practicum.dto.product.ProductDto;
 import ru.practicum.dto.product.SetProductQuantityStateRequest;
-import ru.practicum.exception.BadRequestException;
-import ru.practicum.exception.ResourceNotFoundException;
-import ru.practicum.exception.ServiceTemporaryUnavailableException;
 
 import java.util.UUID;
+
+import static ru.practicum.exception.FallBackUtility.fastFallBack;
 
 /**
  * Фабрика fallback для Feign клиента магазина.
@@ -58,21 +57,6 @@ public class ShoppingStoreFeignClientFallbackFactory implements FallbackFactory<
             public ProductDto getProduct(UUID productId) {
                 fastFallBack(cause);
                 return null;
-            }
-
-            private void fastFallBack(Throwable cause) {
-                if (cause instanceof ResourceNotFoundException) {
-                    log.warn("Not found (404): ", cause);
-                    throw (ResourceNotFoundException) cause;
-                }
-
-                if (cause instanceof BadRequestException) {
-                    log.warn("Bad request (4xx): ", cause);
-                    throw (BadRequestException) cause;
-                }
-
-                log.error("Server/network error ", cause);
-                throw new ServiceTemporaryUnavailableException("Service is temporarily unavailable");
             }
         };
     }
