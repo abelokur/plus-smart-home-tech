@@ -2,6 +2,7 @@ package ru.practicum.client.delivery;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import ru.practicum.dto.delivery.DeliveryDto;
 import ru.practicum.dto.order.OrderDto;
@@ -24,7 +25,7 @@ public class DeliveryFeignClientFallbackFactory implements FallbackFactory<Deliv
     public DeliveryFeignClient create(Throwable cause) {
         return new DeliveryFeignClient() {
             @Override
-            public DeliveryDto planDelivery(DeliveryDto deliveryDto) {
+            public ResponseEntity<DeliveryDto> planDelivery(DeliveryDto deliveryDto) {
                 fastFallBack(cause);
                 return null;
             }

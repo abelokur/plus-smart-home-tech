@@ -1,6 +1,7 @@
 package ru.practicum.client;
 
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,7 +24,7 @@ public interface DeliveryClient {
      * @return созданная/обновленная информация о доставке
      */
     @PutMapping
-    DeliveryDto planDelivery(@RequestBody @Valid DeliveryDto deliveryDto);
+    ResponseEntity<DeliveryDto> planDelivery(@RequestBody @Valid DeliveryDto deliveryDto);
 
     /**
      * Отметить доставку как успешную.

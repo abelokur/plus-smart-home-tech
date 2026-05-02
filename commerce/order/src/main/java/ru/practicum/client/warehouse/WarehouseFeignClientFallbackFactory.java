@@ -18,7 +18,6 @@ import static ru.practicum.exception.FallBackUtility.fastFallBack;
  * которая вызывается при сбоях в основном сервисе.
  */
 @Component
-@Slf4j
 public class WarehouseFeignClientFallbackFactory implements FallbackFactory<WarehouseFeignClient> {
 
     @Override

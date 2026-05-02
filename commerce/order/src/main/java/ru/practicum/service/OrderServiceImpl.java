@@ -103,8 +103,6 @@ public class OrderServiceImpl implements OrderService {
                 warehouseClient.cancelAssemblyProductForOrder(order.getOrderId());
             }
 
-            //пробрасываем исключение дальше,
-            //что бы не создавался заказ и была видна причина почему это произошло.
             throw e;
         }
 
@@ -333,7 +331,7 @@ public class OrderServiceImpl implements OrderService {
                 .orderId(order.getOrderId())
                 .build();
 
-        deliveryDto = deliveryClient.planDelivery(deliveryDto);
+        DeliveryDto deliveryDtoResult = deliveryClient.planDelivery(deliveryDto).getBody();
         order.setDeliveryId(deliveryDto.deliveryId());
         orderRepository.save(order);
     }

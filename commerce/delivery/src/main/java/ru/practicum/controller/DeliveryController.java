@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.annotation.LogAllMethods;
@@ -34,7 +35,6 @@ public class DeliveryController implements DeliveryClient {
 
     @Override
     @PutMapping
-    @ResponseStatus(HttpStatus.OK)
     @Operation(
             summary = "Запланировать доставку",
             description = "Создает или обновляет информацию о доставке заказа"
@@ -44,10 +44,11 @@ public class DeliveryController implements DeliveryClient {
             @ApiResponse(responseCode = "400", description = "Неверные данные доставки"),
             @ApiResponse(responseCode = "404", description = "Заказ не найден")
     })
-    public DeliveryDto planDelivery(
+    public ResponseEntity<DeliveryDto> planDelivery(
             @Parameter(description = "Данные доставки", required = true)
             @RequestBody @Valid DeliveryDto deliveryDto) {
-        return deliveryService.planDelivery(deliveryDto);
+            DeliveryDto result = deliveryService.planDelivery(deliveryDto);
+        return ResponseEntity.ok(result);
     }
 
     @Override

@@ -33,7 +33,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final OrderClient orderClient;
     private final ShoppingStoreClient shoppingStoreClient;
     private final TransactionTemplate transactionTemplate;
-    private final BigDecimal TAX_PERCENTAGE = BigDecimal.valueOf(0.1);
+    private static final BigDecimal TAX_PERCENTAGE = BigDecimal.valueOf(0.1);
+    private static final int DECIMAL_SCALE = 2;
 
     /**
      * Создает платеж для заказа.
@@ -79,7 +80,7 @@ public class PaymentServiceImpl implements PaymentService {
         return deliveryTotal
                 .add(productTotal)
                 .add(calculateTax(productTotal))
-                .setScale(2, RoundingMode.HALF_UP);
+                .setScale(DECIMAL_SCALE, RoundingMode.HALF_UP);
     }
 
     /**
@@ -144,7 +145,7 @@ public class PaymentServiceImpl implements PaymentService {
                     return price.multiply(quantity);
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .setScale(2, RoundingMode.HALF_UP);
+                .setScale(DECIMAL_SCALE, RoundingMode.HALF_UP);
     }
 
     /**
@@ -225,6 +226,6 @@ public class PaymentServiceImpl implements PaymentService {
      */
     private BigDecimal calculateTax(BigDecimal productPrice) {
         return productPrice.multiply(TAX_PERCENTAGE)
-                .setScale(2, RoundingMode.HALF_UP);
+                .setScale(DECIMAL_SCALE, RoundingMode.HALF_UP);
     }
 }
