@@ -15,7 +15,8 @@ import ru.practicum.dto.product.SetProductQuantityStateRequest;
 import java.util.UUID;
 
 /**
- * Клиент для управления товарами в магазине.
+ * Контракт для работы с магазином.
+ * Используется как для контроллера, так и для Feign-клиента.
  */
 public interface ShoppingStoreClient {
 

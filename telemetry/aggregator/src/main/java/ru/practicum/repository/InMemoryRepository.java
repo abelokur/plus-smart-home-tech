@@ -27,7 +27,7 @@ public class InMemoryRepository {
      *
      * @param hubId идентификатор хаба, для которого запрашиваются данные
      * @return Optional содержащий {@link SensorsSnapshotAvro} если данные найдены,
-     *         или пустой Optional если данные отсутствуют
+     * или пустой Optional если данные отсутствуют
      * @throws NullPointerException если hubId равен null
      */
     public Optional<SensorsSnapshotAvro> get(String hubId) {

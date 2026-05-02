@@ -11,26 +11,59 @@ import org.springframework.http.HttpStatus;
 @Slf4j
 public abstract class BaseErrorDecoder implements ErrorDecoder {
     private final ErrorDecoder defaultErrorDecoder = new Default();
+    private final String serviceName;
+
+    protected BaseErrorDecoder(String serviceName) {
+        this.serviceName = serviceName;
+    }
 
     @Override
     public Exception decode(String methodKey, Response response) {
         HttpStatus status = HttpStatus.valueOf(response.status());
 
+        String message = buildErrorMessage(methodKey, status, response);
+        logError(methodKey, status, response);
+
         if (status == HttpStatus.NOT_FOUND) {
-            log.debug("Not found error {} for {}", status, methodKey);
-            return new ResourceNotFoundException("Resource not found: " + methodKey);
+            return new ResourceNotFoundException(message);
         }
 
         if (status.is5xxServerError()) {
-            log.warn("Server error {} for {}", status, methodKey);
-            return new ServiceTemporaryUnavailableException("Service temporary unavailable: " + methodKey);
+            return new ServiceTemporaryUnavailableException(message);
         }
 
         if (status.is4xxClientError()) {
-            log.debug("Client error {} for {}", status, methodKey);
-            return new BadRequestException("Service error: " + methodKey + ", status: " + status);
+            return new BadRequestException(message);
         }
 
         return defaultErrorDecoder.decode(methodKey, response);
+    }
+
+    private String buildErrorMessage(String methodKey, HttpStatus status, Response response) {
+        return String.format("[%s] Error in %s. Status: %d (%s). Path: %s",
+                serviceName,
+                extractMethodName(methodKey),
+                status.value(),
+                status.getReasonPhrase(),
+                response.request().url()
+        );
+    }
+
+    private void logError(String methodKey, HttpStatus status, Response response) {
+        if (status.is5xxServerError()) {
+            log.error("[{}] Server error {} in method: {}, URL: {}",
+                    serviceName, status, methodKey, response.request().url());
+        } else if (status.is4xxClientError()) {
+            log.warn("[{}] Client error {} in method: {}, URL: {}",
+                    serviceName, status, methodKey, response.request().url());
+        }
+    }
+
+    private String extractMethodName(String methodKey) {
+        int hashIndex = methodKey.indexOf('#');
+        if (hashIndex != -1) {
+            return methodKey.substring(hashIndex + 1);
+        }
+        return methodKey;
     }
 }

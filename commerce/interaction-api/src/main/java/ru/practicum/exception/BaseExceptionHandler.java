@@ -18,47 +18,27 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public abstract class BaseExceptionHandler {
+    @ExceptionHandler(NotAuthorizedUserException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ErrorResponse handleNotAuthorizedUserException(NotAuthorizedUserException ex) {
+        log.warn("Unauthorized access", ex);
+        return handleGenericException(ex, "Unauthorized access");
+    }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse handleResourceNotFoundException(
             ResourceNotFoundException ex) {
-
-        List<ErrorResponse.Issue> issues = List.of(
-                ErrorResponse.Issue.builder()
-                        .location(ex.getClass().getSimpleName())
-                        .description(ex.getMessage())
-                        .build()
-        );
-
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message("Resource not found")
-                .issues(issues)
-                .build();
-
-        log.warn("Resource not found: {}", ex.getMessage(), ex);
-        return errorResponse;
+        log.warn("Resource not found", ex);
+        return handleGenericException(ex, "Resource not found");
     }
 
     @ExceptionHandler(ServiceTemporaryUnavailableException.class)
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
     public ErrorResponse handleServiceTemporaryUnavailable(
             ServiceTemporaryUnavailableException ex) {
-
-        List<ErrorResponse.Issue> issues = List.of(
-                ErrorResponse.Issue.builder()
-                        .location(ex.getClass().getSimpleName())
-                        .description(ex.getMessage())
-                        .build()
-        );
-
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message("Service temporary unavailable")
-                .issues(issues)
-                .build();
-
-        log.warn("Service unavailable: {}", ex.getMessage(), ex);
-        return errorResponse;
+        log.warn("Service temporary unavailable", ex);
+        return handleGenericException(ex, "Service temporary unavailable");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -121,16 +101,18 @@ public abstract class BaseExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleRuntimeException(RuntimeException ex) {
+        log.error("Internal server error", ex);
         return handleGenericException(ex, "Internal server error");
     }
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleException(Exception ex) {
+        log.error("Internal server error", ex);
         return handleGenericException(ex, "Internal server error");
     }
 
-    private ErrorResponse handleGenericException(Exception ex, String message) {
+    protected ErrorResponse handleGenericException(Exception ex, String message) {
         List<ErrorResponse.Issue> issues = List.of(
                 ErrorResponse.Issue.builder()
                         .location(ex.getClass().getSimpleName())

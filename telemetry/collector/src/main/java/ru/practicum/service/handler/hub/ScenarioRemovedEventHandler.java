@@ -8,8 +8,23 @@ import ru.yandex.practicum.kafka.telemetry.event.ScenarioRemovedEventAvro;
 
 import static ru.yandex.practicum.grpc.telemetry.event.HubEventProto.PayloadCase.SCENARIO_REMOVED;
 
+/**
+ * Обработчик событий удаления сценариев из хаба.
+ * Преобразует ScenarioRemovedEventProto в Avro-формат и отправляет в Kafka топик TELEMETRY_HUBS.
+ * Событие удаления сценария содержит информацию об имени удаляемого сценария.
+ *
+ * @see BaseHubEventHandler
+ * @see ScenarioRemovedEventProto
+ * @see ScenarioRemovedEventAvro
+ */
 @Component
 public class ScenarioRemovedEventHandler extends BaseHubEventHandler<ScenarioRemovedEventAvro> {
+
+    /**
+     * Конструктор обработчика событий удаления сценариев.
+     *
+     * @param producer Kafka продюсер для отправки событий
+     */
     public ScenarioRemovedEventHandler(KafkaEventProducer producer) {
         super(producer);
     }

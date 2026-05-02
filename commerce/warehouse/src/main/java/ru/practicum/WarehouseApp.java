@@ -9,6 +9,15 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 /**
  * Главный класс приложения склада.
+ * Запускает Spring Boot приложение с поддержкой микросервисной архитектуры.
+ *
+ * <p>Конфигурация включает:</p>
+ * <ul>
+ *   <li>Spring Boot автоконфигурацию</li>
+ *   <li>Feign клиенты для взаимодействия с сервисом магазина</li>
+ *   <li>Service Discovery для регистрации в Eureka/Consul</li>
+ *   <li>AspectJ для AOP (логирование, метрики)</li>
+ * </ul>
  */
 @SpringBootApplication
 @EnableFeignClients
@@ -16,12 +25,6 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 @EnableAspectJAutoProxy
 @Slf4j
 public class WarehouseApp {
-
-    /**
-     * Точка входа в приложение.
-     *
-     * @param args аргументы командной строки
-     */
     public static void main(String[] args) {
         log.info("Starting WarehouseApp");
         SpringApplication.run(WarehouseApp.class, args);

@@ -17,11 +17,31 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * gRPC сервис для приема и обработки событий телеметрии от IoT устройств.
+ * Обрабатывает события от сенсоров (датчиков) и хабов умного дома.
+ * <p>
+ * Автоматически регистрируется в Spring контексте благодаря аннотации {@link GrpcService}.
+ * Использует паттерн "Стратегия" через специализированные обработчики событий.
+ *
+ * @see SensorEventHandler
+ * @see HubEventHandler
+ */
+
 @GrpcService
 @Slf4j
 public class EventController extends CollectorControllerGrpc.CollectorControllerImplBase {
     private final Map<SensorEventProto.PayloadCase, SensorEventHandler> sensorEventHandlers;
     private final Map<HubEventProto.PayloadCase, HubEventHandler> hubEventHandlers;
+
+    /**
+     * Конструктор контроллера событий.
+     * Инициализирует карты обработчиков для различных типов событий.
+     *
+     * @param sensorEventHandlers набор обработчиков событий от сенсоров.
+     * @param hubEventHandlers    набор обработчиков событий от хабов.
+     * @throws IllegalArgumentException если переданы пустые наборы обработчиков.
+     */
     public EventController(Set<SensorEventHandler> sensorEventHandlers, Set<HubEventHandler> hubEventHandlers) {
         this.sensorEventHandlers = sensorEventHandlers.stream()
                 .collect(Collectors.toMap(

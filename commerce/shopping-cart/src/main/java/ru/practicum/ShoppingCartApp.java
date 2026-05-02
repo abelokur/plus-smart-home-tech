@@ -9,6 +9,15 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 /**
  * Главный класс приложения корзины покупок.
+ * Запускает Spring Boot приложение с поддержкой микросервисной архитектуры.
+ *
+ * <p>Конфигурация включает:</p>
+ * <ul>
+ *   <li>Spring Boot автоконфигурацию</li>
+ *   <li>Feign клиенты для взаимодействия с сервисом склада</li>
+ *   <li>Service Discovery для регистрации в Eureka/Consul</li>
+ *   <li>AspectJ для AOP (логирование, метрики)</li>
+ * </ul>
  */
 @SpringBootApplication
 @EnableFeignClients
@@ -17,11 +26,6 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 @Slf4j
 public class ShoppingCartApp {
 
-    /**
-     * Точка входа в приложение.
-     *
-     * @param args аргументы командной строки
-     */
     public static void main(String[] args) {
         log.info("Starting ShoppingCartApp");
         SpringApplication.run(ShoppingCartApp.class, args);

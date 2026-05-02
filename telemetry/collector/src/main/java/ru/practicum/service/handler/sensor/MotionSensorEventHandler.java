@@ -7,8 +7,20 @@ import ru.yandex.practicum.grpc.telemetry.event.SensorEventProto;
 import ru.yandex.practicum.kafka.telemetry.event.MotionSensorAvro;
 
 import static ru.yandex.practicum.grpc.telemetry.event.SensorEventProto.PayloadCase.MOTION_SENSOR;
+
+/**
+ * Обработчик событий датчиков движения.
+ * Преобразует MotionSensorProto в MotionSensorAvro и отправляет в Kafka топик TELEMETRY_SENSORS.
+ * Обрабатывает данные о наличии движения, качестве связи и напряжении датчика.
+ *
+ * @see BaseSensorEventHandler
+ * @see MotionSensorProto
+ * @see MotionSensorAvro
+ * @see SensorEventProto.PayloadCase#MOTION_SENSOR
+ */
 @Component
 public class MotionSensorEventHandler extends BaseSensorEventHandler<MotionSensorAvro> {
+
     /**
      * Конструктор обработчика событий датчиков движения.
      *

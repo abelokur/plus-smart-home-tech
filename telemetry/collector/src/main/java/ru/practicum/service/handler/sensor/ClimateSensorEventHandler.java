@@ -7,8 +7,21 @@ import ru.yandex.practicum.grpc.telemetry.event.SensorEventProto;
 import ru.yandex.practicum.kafka.telemetry.event.ClimateSensorAvro;
 
 import static ru.yandex.practicum.grpc.telemetry.event.SensorEventProto.PayloadCase.CLIMATE_SENSOR;
+
+
+/**
+ * Обработчик событий климатических сенсоров.
+ * Преобразует ClimateSensorProto в ClimateSensorAvro и отправляет в Kafka топик TELEMETRY_SENSORS.
+ * Обрабатывает данные о климатических показателях: уровень CO2, влажность и температуру.
+ *
+ * @see BaseSensorEventHandler
+ * @see ClimateSensorProto
+ * @see ClimateSensorAvro
+ * @see SensorEventProto.PayloadCase#CLIMATE_SENSOR
+ */
 @Component
 public class ClimateSensorEventHandler extends BaseSensorEventHandler<ClimateSensorAvro> {
+
     /**
      * Конструктор обработчика событий климатических сенсоров.
      *

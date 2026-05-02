@@ -9,9 +9,9 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.errors.WakeupException;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-import ru.practicum.repository.InMemoryRepository;
 import ru.practicum.config.KafkaConfig;
 import ru.practicum.config.TopicType;
+import ru.practicum.repository.InMemoryRepository;
 import ru.yandex.practicum.kafka.telemetry.event.SensorEventAvro;
 import ru.yandex.practicum.kafka.telemetry.event.SensorStateAvro;
 import ru.yandex.practicum.kafka.telemetry.event.SensorsSnapshotAvro;
@@ -162,7 +162,7 @@ public class AggregationStarter implements CommandLineRunner {
      *
      * @param event событие датчика для обработки
      * @return {@link Optional} содержащий обновленный {@link SensorsSnapshotAvro} если состояние изменилось,
-     *         или пустой {@link Optional} если обновление не требуется
+     * или пустой {@link Optional} если обновление не требуется
      */
     private Optional<SensorsSnapshotAvro> updateState(SensorEventAvro event) {
         if (event == null) {

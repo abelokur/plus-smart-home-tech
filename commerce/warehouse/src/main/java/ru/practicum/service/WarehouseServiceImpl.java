@@ -9,10 +9,7 @@ import ru.practicum.client.ShoppingStoreFeignClient;
 import ru.practicum.dto.cart.ShoppingCartDto;
 import ru.practicum.dto.product.QuantityState;
 import ru.practicum.dto.product.SetProductQuantityStateRequest;
-import ru.practicum.dto.warehouse.AddProductToWarehouseRequest;
-import ru.practicum.dto.warehouse.AddressDto;
-import ru.practicum.dto.warehouse.BookedProductsDto;
-import ru.practicum.dto.warehouse.NewProductInWarehouseRequest;
+import ru.practicum.dto.warehouse.*;
 import ru.practicum.exception.*;
 import ru.practicum.mapper.AddressMapper;
 import ru.practicum.mapper.DimensionMapper;
@@ -23,13 +20,13 @@ import ru.practicum.repository.BookedProductRepository;
 import ru.practicum.repository.WarehouseProductRepository;
 import ru.practicum.repository.WarehouseRepository;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * Реализация сервиса управления складом.
+ * Обрабатывает операции с товарами на складе: добавление, проверка наличия,
+ * бронирование, сборка заказов и управление остатками.
  */
 @Service
 @RequiredArgsConstructor
@@ -43,6 +40,12 @@ public class WarehouseServiceImpl implements WarehouseService {
     private final DimensionMapper dimensionMapper;
     private final ShoppingStoreFeignClient shoppingStoreClient;
 
+    /**
+     * Добавляет новый тип товара на склад.
+     *
+     * @param request данные о новом товаре
+     * @throws SpecifiedProductAlreadyInWarehouseException если товар уже зарегистрирован на складе
+     */
     @Transactional
     @Override
     public void addNewItem(NewProductInWarehouseRequest request) {
@@ -68,148 +71,177 @@ public class WarehouseServiceImpl implements WarehouseService {
         products.add(newProduct);
     }
 
+    /**
+     * Проверяет наличие товаров из корзины на складе.
+     *
+     * @param shoppingCart корзина для проверки
+     * @return информация о забронированных товарах
+     * @throws ProductInShoppingCartLowQuantityInWarehouse если товаров недостаточно на складе
+     */
+    @Transactional(readOnly = true)
     @Override
     public BookedProductsDto checkQuantityInWarehouse(ShoppingCartDto shoppingCart) {
         Map<UUID, Long> shoppingCartProducts = shoppingCart.products();
-
-        List<WarehouseProduct> products = warehouseProductRepository
-                .findAllByProductIdIn(shoppingCartProducts.keySet());
-
-        Map<UUID, Long> availableProducts = products.stream()
-                .collect(Collectors.toMap(
-                        WarehouseProduct::getProductId,
-                        WarehouseProduct::getQuantity,
-                        Long::sum));
-
-        List<UUID> notEnoughProducts = shoppingCartProducts.entrySet().stream()
-                .filter(entry -> {
-                    Long available = availableProducts.get(entry.getKey());
-                    return available == null || available < entry.getValue();
-                }).map(Map.Entry::getKey)
-                .toList();
-
-        if (!notEnoughProducts.isEmpty()) {
-            throw new ProductInShoppingCartLowQuantityInWarehouse("Not enough products in warehouse, ids = " +
-                                                                  notEnoughProducts);
-        }
-
-        // рассчитываем вес и объем доставки
-        Double deliveryWeight = products.stream()
-                .mapToDouble(wp -> wp.getWeight() * shoppingCartProducts.get(wp.getProductId()))
-                .sum();
-        Double deliveryVolume = products.stream()
-                .mapToDouble(wp -> wp.getDimensions().getVolume() * shoppingCartProducts.get(wp.getProductId()))
-                .sum();
-        Boolean fragile = products.stream().anyMatch(WarehouseProduct::getFragile);
-
-        return BookedProductsDto.builder()
-                .deliveryWeight(deliveryWeight)
-                .deliveryVolume(deliveryVolume)
-                .fragile(fragile)
-                .build();
+        List<WarehouseProduct> availableProducts = checkAvailableProducts(shoppingCartProducts);
+        return determineBookedProducts(availableProducts, shoppingCartProducts);
     }
 
-    //в рамках ТЗ работаем с одним складом, то будет только 1 элемент или пусто
-    // TODO: в случае работы с несколькими складами, нужно будет:
-    // 1. менять логику самого запроса (указывать конкретный склад)
-    // 2. менять логику процесса добавления на конкретный склад
+    /**
+     * Добавляет количество существующего товара на склад.
+     * Обновляет состояние количества товара в магазине.
+     *
+     * @param request запрос на добавление товара
+     * @throws NoSpecifiedProductInWarehouseException если товар не найден на складе
+     */
     @Override
     public void addItem(AddProductToWarehouseRequest request) {
-
         WarehouseProduct updatedWarehouseProduct = transactionTemplate.execute(status -> {
             WarehouseProduct warehouseProduct = warehouseProductRepository.findByProductId(request.productId())
                     .orElseThrow(() -> new NoSpecifiedProductInWarehouseException(
                             String.format("Product which id = %s not found", request.productId())));
 
             warehouseProduct.setQuantity(warehouseProduct.getQuantity() + request.quantity());
-
             return warehouseProduct;
         });
 
-        updateQuantityState(updatedWarehouseProduct); //обновляем состояние на складе
+        updateQuantityState(updatedWarehouseProduct);
     }
 
-    // TODO: При добавлении поддержки нескольких складов необходимо:
-    // 1. Изменить логику резервирования - распределять товары между складами
-    // 2. Добавить алгоритм выбора складов (ближайший, с наибольшим запасом и т.д.)
-    // 3. Учитывать остатки на каждом складе при распределении
-    // 4. Возможно добавить приоритеты складов
-    // Пример будущей реализации:
-    // Map<UUID, Long> remainingDemand = new HashMap<>(shoppingCartProducts);
-    // for (каждый товар в заказе) {
-    //   for (каждый склад с этим товаром) {
-    //     Long reserve = Math.min(remainingDemand.get(productId), stock.getQuantity());
-    //     // создать BookedProduct с reserve количеством
-    //     // уменьшить remainingDemand и остатки на складе
-    //   }
-    // }
+    /**
+     * Собирает товары для заказа из корзины.
+     * Бронирует товары на складе и обновляет остатки.
+     *
+     * @param request запрос на сборку товаров
+     * @return информация о забронированных товарах с характеристиками доставки
+     * @throws ProductInShoppingCartLowQuantityInWarehouse если товаров недостаточно на складе
+     */
     @Override
-    public void bookProducts(ShoppingCartDto shoppingCart) {
-        Map<UUID, Long> shoppingCartProducts = shoppingCart.products();
+    @Transactional
+    public BookedProductsDto assemblyProductForOrder(AssemblyProductsForOrderRequest request) {
+        Map<UUID, Long> assemblyProducts = request.products();
+        List<WarehouseProduct> products = checkAvailableProducts(assemblyProducts);
 
-        List<WarehouseProduct> updatedWarehouseProducts =
-                transactionTemplate.execute(status -> {
-                            List<WarehouseProduct> products = warehouseProductRepository
-                                    .findAllByProductIdIn(shoppingCartProducts.keySet());
+        // Создаем бронирования
+        List<BookedProduct> bookedProducts = products.stream()
+                .map(product -> BookedProduct.builder()
+                        .orderId(request.orderId())
+                        .warehouseProduct(product)
+                        .quantity(assemblyProducts.get(product.getProductId()))
+                        .build())
+                .toList();
 
+        bookedProductRepository.saveAll(bookedProducts);
 
-                            List<BookedProduct> bookedProducts =
-                                    products.stream()
-                                            .map(product -> BookedProduct.builder()
-                                                    .shoppingCartId(shoppingCart.shoppingCartId())
-                                                    .warehouseProduct(product)
-                                                    .quantity(shoppingCartProducts.get(product.getProductId()))
-                                                    .build())
-                                            .toList();
+        // Уменьшаем количество
+        products.forEach(product ->
+                product.setQuantity(
+                        product.getQuantity() -
+                        assemblyProducts.get(product.getProductId())));
 
-                            // сохраняем забронированные товары в базу данных
-                            bookedProductRepository.saveAll(bookedProducts);
+        products.forEach(this::updateQuantityState);
 
-                            // уменьшаем количество товара на складе
-                            products.forEach(product ->
-                                    product.setQuantity(
-                                            product.getQuantity() -
-                                            shoppingCartProducts.get(product.getProductId())));
-                            return products;
-                        }
-                );
-
-        updatedWarehouseProducts.forEach(this::updateQuantityState); //обновляем статус в магазине
+        return determineBookedProducts(products, assemblyProducts);
     }
 
-    // в рамках ТЗ работаем с одним складом,
-    // то не важно адрес какого склада мы запрашиваем
-    // TODO: при добавлении поддержки работы с несколькими складами необходимо:
-    // 1. менять логику самого запроса
-    // 2. менять логику получения адреса склада
+    /**
+     * Получает адрес склада.
+     *
+     * @return адрес склада
+     */
     @Override
     public AddressDto getAddress() {
         Warehouse warehouse = getRandomWarehouse();
         return addressMapper.toDto(warehouse.getAddress());
     }
 
+    /**
+     * Отмечает товары как отгруженные для доставки.
+     * Связывает забронированные товары с идентификатором доставки.
+     *
+     * @param request данные об отгрузке
+     */
+    @Override
+    @Transactional
+    public void shippedToDelivery(ShippedToDeliveryRequest request) {
+        List<BookedProduct> bookedProducts =
+                bookedProductRepository.findAllByOrderId(request.orderId());
+        bookedProducts.forEach(product -> product.setDeliveryId(request.deliveryId()));
+    }
+
+    /**
+     * Возвращает товары на склад.
+     * Увеличивает остаток товаров и обновляет состояние количества.
+     *
+     * @param products товары для возврата (ID товара → количество)
+     */
+    @Override
+    @Transactional
+    public void returnToWarehouse(Map<UUID, Long> products) {
+        List<WarehouseProduct> productsToReturn = warehouseProductRepository.findAllByProductIdIn(products.keySet());
+        productsToReturn.forEach(product ->
+                product.setQuantity(product.getQuantity() + products.get(product.getProductId())));
+        productsToReturn.forEach(this::updateQuantityState);
+    }
+
+    /**
+     * Отменяет сборку товаров для заказа.
+     * Возвращает забронированные товары на склад и обнуляет бронирование.
+     *
+     * @param orderId идентификатор заказа
+     */
+    @Override
+    @Transactional
+    public void cancelAssemblyProductForOrder(UUID orderId) {
+        List<BookedProduct> bookedProducts = bookedProductRepository.findAllByOrderId(orderId);
+
+        if (bookedProducts.isEmpty()) {
+            return;
+        }
+
+        List<WarehouseProduct> warehouseProductsToUpdate = new ArrayList<>();
+
+        for (BookedProduct bookedProduct : bookedProducts) {
+            WarehouseProduct warehouseProduct = bookedProduct.getWarehouseProduct();
+            warehouseProduct.setQuantity(warehouseProduct.getQuantity() + bookedProduct.getQuantity());
+            warehouseProductsToUpdate.add(warehouseProduct);
+        }
+
+        warehouseProductRepository.saveAll(warehouseProductsToUpdate);
+        int canceledBooking = bookedProductRepository.updateQuantity(orderId, 0L);
+        log.info("Canceled booking for {} booked products", canceledBooking);
+        warehouseProductsToUpdate.forEach(this::updateQuantityState);
+    }
+
+    /**
+     * Получает случайный склад из доступных.
+     *
+     * @return случайный склад
+     * @throws RuntimeException если склады не найдены
+     */
     private Warehouse getRandomWarehouse() {
-        // в рамках ТЗ работаем с одним рандомным складом (инициализироваться БД будет с 1 складом)
         return warehouseRepository.findAll().stream()
                 .findAny()
                 .orElseThrow(() -> new RuntimeException("No warehouses found"));
     }
 
+    /**
+     * Обновляет состояние количества товара в магазине.
+     * Отправляет запрос в сервис магазина для обновления статуса количества.
+     *
+     * @param warehouseProduct товар на складе
+     */
     private void updateQuantityState(WarehouseProduct warehouseProduct) {
         if (warehouseProduct == null) {
             return;
         }
 
         QuantityState quantityState = determineQuantityState(warehouseProduct.getQuantity());
-
         log.debug("Setting quantity state for product {} to {}", warehouseProduct.getProductId(), quantityState);
 
         SetProductQuantityStateRequest request = new SetProductQuantityStateRequest(
                 warehouseProduct.getProductId(),
-                determineQuantityState(warehouseProduct.getQuantity()));
-        //отправляем данные в магазин, в случае любой ошибки просто логируем и продложаем работу
-        log.debug("Sending request to set quantity state for product {} to {}",
-                warehouseProduct.getProductId(), quantityState);
+                quantityState);
+
         try {
             shoppingStoreClient.setQuantityState(request);
         } catch (ResourceNotFoundException e) {
@@ -223,6 +255,12 @@ public class WarehouseServiceImpl implements WarehouseService {
         }
     }
 
+    /**
+     * Определяет состояние количества на основе доступного количества.
+     *
+     * @param quantity доступное количество товара
+     * @return состояние количества
+     */
     private QuantityState determineQuantityState(Long quantity) {
         if (quantity == 0) {
             return QuantityState.ENDED;
@@ -233,5 +271,76 @@ public class WarehouseServiceImpl implements WarehouseService {
         } else {
             return QuantityState.MANY;
         }
+    }
+
+    /**
+     * Проверяет доступность товаров на складе.
+     *
+     * @param checkingProducts товары для проверки (ID → требуемое количество)
+     * @return доступные товары на складе
+     * @throws ProductInShoppingCartLowQuantityInWarehouse если товаров недостаточно
+     */
+    private List<WarehouseProduct> checkAvailableProducts(Map<UUID, Long> checkingProducts) {
+        if (checkingProducts == null || checkingProducts.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<WarehouseProduct> products = warehouseProductRepository
+                .findAllByProductIdIn(checkingProducts.keySet());
+
+        Map<UUID, Long> availableProducts = products.stream()
+                .collect(Collectors.toMap(
+                        WarehouseProduct::getProductId,
+                        WarehouseProduct::getQuantity,
+                        Long::sum));
+
+        List<UUID> notEnoughProducts = checkingProducts.entrySet().stream()
+                .filter(entry -> {
+                    Long available = availableProducts.get(entry.getKey());
+                    return available == null || available < entry.getValue();
+                }).map(Map.Entry::getKey)
+                .toList();
+
+        if (!notEnoughProducts.isEmpty()) {
+            throw new ProductInShoppingCartLowQuantityInWarehouse("Out of stock products ids: { " +
+                                                                  notEnoughProducts + " }");
+        }
+
+        return products;
+    }
+
+    /**
+     * Определяет характеристики забронированных товаров для доставки.
+     *
+     * @param availableProducts доступные товары на складе
+     * @param assemblyProducts  товары для сборки (ID → количество)
+     * @return характеристики забронированных товаров
+     */
+    private BookedProductsDto determineBookedProducts(
+            List<WarehouseProduct> availableProducts,
+            Map<UUID, Long> assemblyProducts) {
+
+        if (availableProducts == null || availableProducts.isEmpty()
+            || assemblyProducts == null || assemblyProducts.isEmpty()) {
+            return BookedProductsDto.builder().build();
+        }
+
+        Double deliveryWeight = availableProducts.stream()
+                .mapToDouble(wp ->
+                        wp.getWeight() * assemblyProducts.get(wp.getProductId()))
+                .sum();
+
+        Double deliveryVolume = availableProducts.stream()
+                .mapToDouble(wp ->
+                        wp.getDimensions().getVolume() * assemblyProducts.get(wp.getProductId()))
+                .sum();
+
+        Boolean fragile = availableProducts.stream().anyMatch(WarehouseProduct::getFragile);
+
+        return BookedProductsDto.builder()
+                .deliveryWeight(deliveryWeight)
+                .deliveryVolume(deliveryVolume)
+                .fragile(fragile)
+                .build();
     }
 }

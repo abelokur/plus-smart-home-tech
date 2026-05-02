@@ -1,3 +1,19 @@
+feign:
+  clients:
+    warehouse:
+      username: warehouse
+      password: warehouse
+
+app:
+  security:
+    users:
+      shopping-cart:
+        password: shopping-cart
+        roles: SERVICE
+      gateway:
+        password: gateway
+        roles: GATEWAY
+
 spring:
   jpa:
     hibernate.ddl-auto: none                     # Отключить автоматическое создание и обновление таблиц Hibernate
@@ -43,3 +59,7 @@ resilience4j:
         baseConfig: default                       # Использовать базовую конфигурацию из секции configs.default
         slidingWindowSize: 20                     # Количество вызовов в скользящем окне для расчета статистики
         minimumNumberOfCalls: 10                   # Минимальное количество вызовов перед оценкой состояния Circuit Breaker
+
+logging:
+  level:
+    org.springframework.security: DEBUG # Уровень логирования для пакета security
